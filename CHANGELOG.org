@@ -1,0 +1,22 @@
+* Changelog
+All notable changes to this project will be documented in this file.
+
+The format is based on [[https://keepachangelog.com/en/1.1.0][Keep a Changelog]], and this project *DOES NOT* adhere to [[https://semver.org/spec/v2.0.0.html][Semantic
+Versioning]].
+
+** [[https://github.com/simendsjo/sijo-version/compare/89a88d4e2767e9c3f7793e9b4327be7f7fd92381..v0.1.0][0.1.0]] - 2024-03-11
+*** Added
+- ~version~ :: construct a semantic version
+- ~version-file-line-0~ :: fetches the first line from the =VERSION= file
+- ~version-file-line-1~ :: fetches the second line from the =VERSION= file
+- ~system-version~ :: the =:version= field from system we're calculating
+  the version from
+- ~current-time~ :: current time
+- ~git-non-main-branch~ :: git branch if it's the non-main/non-master branch
+- ~git-current-branch~ :: current git branch
+- ~git-current-commit~ :: current git commit
+*** Changed
+*** Deprecated
+*** Removed
+*** Fixed
+*** Security
