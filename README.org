@@ -1,0 +1,192 @@
+Semantic version for your systems. Opinionated defaults, but flexible.
+
+See [[file:CHANGELOG.org][CHANGELOG]].
+
+* Installation
+Clone repository
+#+begin_src bash :eval never
+git clone git@github.com:simendsjo/sijo-version.git ~/quicklisp/local-projects/sijo-version
+#+end_src
+
+* Use
+Load library
+#+begin_src lisp :exports code
+(ql:quickload :sijo-version)
+#+end_src
+
+#+RESULTS:
+| :SIJO-VERSION |
+
+Call ~version~ to get a calculated semver version.
+
+#+begin_src lisp :exports both :eval never
+(sijo-version:version)
+#+end_src
+
+#+RESULTS:
+: 0.1.0-0.dev.27+prototype.7aeedb4d32927e19a5e9ed406ac5735db0fd20dd.20240301145715Z
+
+When supplying the values manually, those will be used instead
+
+#+begin_src lisp :exports both
+(sijo-version:version :version "1.2.3" :pre-release nil :build-metadata nil)
+#+end_src
+
+#+RESULTS:
+: 1.2.3
+
+#+begin_src lisp :exports both
+(sijo-version:version :version "1.2.3" :pre-release "some-prerelease" :build-metadata nil)
+#+end_src
+
+#+RESULTS:
+: 1.2.3-some-prerelease
+
+#+begin_src lisp :exports both
+(sijo-version:version :version "1.2.3" :pre-release "some-prerelease" :build-metadata "some-build-info")
+#+end_src
+
+#+RESULTS:
+: 1.2.3-some-prerelease+some-build-info
+
+* Documentation for ~version~
+
+Warning: This is bound to get out of date, so look at the documentation in the source.
+
+#+begin_src lisp :exports results
+(setf (cdr (assoc 'slynk:*string-elision-length* slynk:*slynk-pprint-bindings*)) nil)
+(documentation 'sijo-version:version 'function)
+#+end_src
+
+#+RESULTS:
+#+begin_example
+Construct a semantic version (https://semver.org/)
+
+Note that minimal effort is made validating or sanitizing the input, so the user
+is able to construct an incorrect semantic version e.g. by supplying too many
+components to :VERSION. Some sanitizing is done by dropping invalid characters.
+
+Calling `version' will construct a default semantic version based on the VERSION
+file, ./.git/HEAD and the current time.
+
+If no VERSION file exists, the asdf components :VERSION will be used for the
+version number.
+
+If no version is found, 0.0.0 is used as the version.
+
+The VERSION file should contain the version number in the first line, and an
+optional pre-release tag in the second line. If no pre-release tag exist in the
+file, the default is to add the git branch name iff it's not the main/master
+branch.
+
+VERSION, PRE-RELEASE and BUILD-METADATA is evaluated by `%eval-spec' into a
+dotted string, and has the following semantics:
+- `string' :: use as-is - it's the canonical form
+- `list' ('if as first element) :: call `%eval-spec' on the second element. If
+  true, return `%eval-spec' of the third element, otherwise return `%eval-spec'
+  of the fourth element.
+- `list' ('when as first element) :: call `%eval-spec' on the second element. If
+  true, return `%eval-spec' of the third element, otherwise return nil.
+- `list' ('unless as first element) :: call `%eval-spec' on the second element. If
+  false, return `%eval-spec' of the third element, otherwise return nil.
+- `list' ('or as first element) :: call `%eval-spec' on second element. If
+  non-nil, return it, otherwise evaluate next element. If there are no more
+  elements, return nil.
+- `list' ('and as first element) :: call `%eval-spec' on subsequent elements,
+  remove nulls, and join with "-" as the separator.
+- `list' :: call `%eval-spec' on each element, remove nulls, and join with "." as a separator.
+- `function' :: call function pass result to `%eval-spec'
+- `symbol' :: if `fboundp', call function and pass result to `%eval-spec'. If
+  `boundp' call `%eval-spec' on `symbol-value'. Otherwise call `%eval-spec' on
+  the `symbol-name'.
+- `atom' :: convert to a string
+
+ROOT is the root folder where the VERSION file and .git directory is located.
+The value is evaluated by `%guess-root', and several different forms is
+accepted:
+- `pathname' :: use as-is - it's the canonical form
+- `asdf:system' :: `asdf:system-relative-pathname' is used as the root
+- `package' :: try to load a system with the same name as `package-name'. If no
+  system is found, `*default-pathname-defaults*' is used.
+- `null' :: we guess given `*package*' instead
+- `string' :: try to load a system, if missing interpret the input as a `pathname' instead
+- `symbol' :: try to guess using the symbol as the system name
+
+Examples:
+
+`(version)'
+"0.1+main.748e8897a233ddbc26a959bd14a97acb0ef5b895.20240301152751Z"
+
+You can specify the system it should fetch information from directly using `:root'
+
+`(version :root :sijo-version)'
+"0.1+main.748e8897a233ddbc26a959bd14a97acb0ef5b895.20240301152751Z"
+
+You can remove the use of extra build metadata
+
+`(version :build-metadata nil)'
+"0.1-some-prerelease"
+
+You can specify the exact version and pre-release tag to use instead of looking in VERSION
+
+>> (version :version "0.1" :pre-release nil :build-metadata nil)
+"0.1"
+
+>> (version :version "0.1" :pre-release "pre" :build-metadata nil)
+"0.1-pre"
+
+>> (version :version "0.1" :pre-release nil :build-metadata "build")
+"0.1+build"
+
+>> (version :version "0.1" :pre-release "pre" :build-metadata "build")
+"0.1-pre+build"
+#+end_example
+
+* Troubleshooting
+** Component "some-package" not found
+~version~ tries to find out what the current system is by looking at
+~(package-name *package*)~. If you're calling ~version~ from a package not named
+the same as a system, it will fail.
+
+#+begin_src lisp :exports both :eval never
+(in-package :common-lisp-user)
+(sijo-version:version)
+#+end_src
+
+#+RESULTS:
+: Component "common-lisp-user" not found
+:  [Condition of type ASDF/FIND-COMPONENT:MISSING-COMPONENT]
+
+In that case, you need to set ~:system~ yourself:
+
+#+begin_src lisp :exports both :eval never
+(in-package :common-lisp-user)
+(sijo-version:version :system :my-system)
+#+end_src
+
+#+RESULTS:
+: 0.1+main.7aeedb4d32927e19a5e9ed406ac5735db0fd20dd.20240301151319Z
+
+** Using =VERSION= in ~defsystem~
+ASDF can read use the version from your =VERSION= file directly with the
+following syntax:
+
+#+begin_src lisp :eval never
+(defsystem :my-system
+  ;; ...
+  :version (:read-file-line "VERSION" :at 0))
+#+end_src
+
+* Versioning
+** =VERSION= file
+The file should include =major.minor.patch= on the first line, and an optional
+=pre-release= tag on the second line.
+
+** Build information
+The system assumes the project is using =git= by default, and will construct
+build information as follows: =branch.commit.timestamp=
+
+- =branch= is the current branch by reading =.git/HEAD=
+- =commit= is the current commit in =.git/HEAD= or by following the ref there
+- =timestamp= is a timestamp when calling the ~version~ function  in the
+  =yyyyMMddHHmmssZ= format
